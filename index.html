@@ -16,9 +16,13 @@
         .btn-del { background: #dc3545; color: white; padding: 6px 10px; font-size: 12px; }
         .table-wrapper { overflow-x: auto; margin-top: 20px; }
         table { width: 100%; border-collapse: collapse; font-size: 14px; }
-        th, td { border: 1px solid #ccc; padding: 8px; text-align: center; white-space: nowrap; }
+        th, td { border: 1px solid #ccc; padding: 8px; text-align: center; }
         th { background: #eee; }
-        @media print { .no-print { display: none !important; } }
+        
+        /* 印刷・PDF出力時に不要な列を隠す */
+        @media print {
+            .no-print, .col-ctrl, .col-drag { display: none !important; }
+        }
     </style>
 </head>
 <body>
@@ -29,6 +33,10 @@
         <input type="text" id="progTitle" value="カラオケ発表会 プログラム" style="width: 100%; box-sizing: border-box; margin-bottom: 10px; padding: 10px;">
         
         <div class="input-area">
+            <select id="printOrientation">
+                <option value="portrait">縦向き</option>
+                <option value="landscape">横向き</option>
+            </select>
             <select id="type" onchange="toggleInputs()">
                 <option value="song">曲目入力</option>
                 <option value="break">休憩・その他</option>
@@ -53,7 +61,7 @@
         <div class="table-wrapper">
             <table>
                 <thead>
-                    <tr><th>並</th><th>順</th><th>名前</th><th>曲名</th><th>歌手名</th><th>キー</th><th>弁当</th><th>操作</th></tr>
+                    <tr><th class="col-drag">並</th><th>順</th><th>名前</th><th>曲名</th><th>歌手名</th><th>キー</th><th>弁当</th><th class="col-ctrl">操作</th></tr>
                 </thead>
                 <tbody id="sortable-list"></tbody>
             </table>
@@ -78,8 +86,8 @@
         const row = document.createElement('tr');
         
         row.innerHTML = type === 'break' ? 
-            `<td>☰</td><td class="num">-</td><td colspan="5"><b>${document.getElementById('break-text').value}</b></td><td><button class="btn-del" onclick="removeRow(this)">削除</button></td>` :
-            `<td>☰</td><td class="num">${seq}</td><td>${document.getElementById('name').value}</td><td>${document.getElementById('song').value}</td><td>${document.getElementById('artist').value}</td><td>${document.getElementById('key').value}</td><td>${document.getElementById('bento').value}</td><td><button class="btn-del" onclick="removeRow(this)">削除</button></td>`;
+            `<td class="col-drag">☰</td><td class="num">-</td><td colspan="5"><b>${document.getElementById('break-text').value}</b></td><td class="col-ctrl"><button class="btn-del" onclick="removeRow(this)">削除</button></td>` :
+            `<td class="col-drag">☰</td><td class="num">${seq}</td><td>${document.getElementById('name').value}</td><td>${document.getElementById('song').value}</td><td>${document.getElementById('artist').value}</td><td>${document.getElementById('key').value}</td><td>${document.getElementById('bento').value}</td><td class="col-ctrl"><button class="btn-del" onclick="removeRow(this)">削除</button></td>`;
         
         tbody.appendChild(row);
         if (type !== 'break' && !seq) renumber();
@@ -90,14 +98,12 @@
         let count = 1;
         document.querySelectorAll('#sortable-list tr').forEach((row) => {
             const numCell = row.querySelector('.num');
-            if (numCell.innerText !== '-') {
-                numCell.innerText = count++;
-            }
+            if (numCell.innerText !== '-') numCell.innerText = count++;
         });
     }
 
     function exportPDF() {
-        const opt = { margin: 5, filename: 'プログラム.pdf', jsPDF: { format: 'a4', orientation: 'portrait' } };
+        const opt = { margin: 5, filename: 'プログラム.pdf', jsPDF: { format: 'a4', orientation: document.getElementById('printOrientation').value } };
         html2pdf().set(opt).from(document.getElementById('preview-box')).save();
     }
 </script>
