@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>プログラム作成ツール</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.15.0/Sortable.min.js"></script>
+    <style>
+        body { font-family: sans-serif; padding: 10px; background: #f4f7f6; margin: 0; }
+        .container { max-width: 600px; margin: auto; background: white; padding: 15px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+        .input-area { display: flex; flex-direction: column; gap: 8px; padding: 15px; border: 2px solid #007bff; border-radius: 8px; background: #eef7ff; }
+        input, select { padding: 12px; border: 1px solid #ccc; border-radius: 6px; font-size: 16px; }
+        .btn { cursor: pointer; padding: 15px; border-radius: 6px; border: none; font-weight: bold; font-size: 16px; width: 100%; margin-top: 5px; }
+        .btn-add { background: #28a745; color: white; }
+        .btn-del { background: #dc3545; color: white; padding: 6px 10px; font-size: 12px; }
+        .table-wrapper { overflow-x: auto; margin-top: 20px; }
+        table { width: 100%; border-collapse: collapse; font-size: 14px; }
+        th, td { border: 1px solid #ccc; padding: 8px; text-align: center; white-space: nowrap; }
+        th { background: #eee; }
+        @media print { .no-print { display: none !important; } }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div class="no-print">
+        <h2 style="margin-top:0;">プログラム作成ツール</h2>
+        <input type="text" id="progTitle" value="カラオケ発表会 プログラム" style="width: 100%; box-sizing: border-box; margin-bottom: 10px; padding: 10px;">
+        
+        <div class="input-area">
+            <select id="type" onchange="toggleInputs()">
+                <option value="song">曲目入力</option>
+                <option value="break">休憩・その他</option>
+            </select>
+            <input type="number" id="inputSeq" placeholder="順番（曲目のみ）">
+            <input type="text" id="name" placeholder="名前">
+            <input type="text" id="song" placeholder="曲名">
+            <input type="text" id="artist" placeholder="歌手名">
+            <input type="text" id="key" placeholder="キー">
+            <select id="bento"><option value="なし">弁当なし</option><option value="あり">弁当あり</option></select>
+            <input type="text" id="break-text" placeholder="内容" style="display:none;">
+            <button class="btn btn-add" onclick="addRow()">追加する</button>
+        </div>
+        <div style="display: flex; gap: 10px; margin-top: 10px;">
+            <button class="btn" style="background:#555; color:white; flex:1;" onclick="window.print()">印刷</button>
+            <button class="btn" style="background:#007bff; color:white; flex:1;" onclick="exportPDF()">PDF保存</button>
+        </div>
+    </div>
+
+    <div id="preview-box">
+        <h2 id="displayTitle" style="text-align:center;">カラオケ発表会 プログラム</h2>
+        <div class="table-wrapper">
+            <table>
+                <thead>
+                    <tr><th>並</th><th>順</th><th>名前</th><th>曲名</th><th>歌手名</th><th>キー</th><th>弁当</th><th>操作</th></tr>
+                </thead>
+                <tbody id="sortable-list"></tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<script>
+    new Sortable(document.getElementById('sortable-list'), { animation: 150, onEnd: renumber });
+
+    function toggleInputs() {
+        const isBreak = document.getElementById('type').value === 'break';
+        ['inputSeq', 'name', 'song', 'artist', 'key', 'bento'].forEach(id => document.getElementById(id).style.display = isBreak ? 'none' : 'block');
+        document.getElementById('break-text').style.display = isBreak ? 'block' : 'none';
+    }
+
+    function addRow() {
+        document.getElementById('displayTitle').innerText = document.getElementById('progTitle').value;
+        const tbody = document.getElementById("sortable-list");
+        const type = document.getElementById('type').value;
+        const seq = type === 'break' ? '-' : document.getElementById('inputSeq').value;
+        const row = document.createElement('tr');
+        
+        row.innerHTML = type === 'break' ? 
+            `<td>☰</td><td class="num">-</td><td colspan="5"><b>${document.getElementById('break-text').value}</b></td><td><button class="btn-del" onclick="removeRow(this)">削除</button></td>` :
+            `<td>☰</td><td class="num">${seq}</td><td>${document.getElementById('name').value}</td><td>${document.getElementById('song').value}</td><td>${document.getElementById('artist').value}</td><td>${document.getElementById('key').value}</td><td>${document.getElementById('bento').value}</td><td><button class="btn-del" onclick="removeRow(this)">削除</button></td>`;
+        
+        tbody.appendChild(row);
+        if (type !== 'break' && !seq) renumber();
+    }
+
+    function removeRow(btn) { btn.parentElement.parentElement.remove(); renumber(); }
+    function renumber() { 
+        let count = 1;
+        document.querySelectorAll('#sortable-list tr').forEach((row) => {
+            const numCell = row.querySelector('.num');
+            if (numCell.innerText !== '-') {
+                numCell.innerText = count++;
+            }
+        });
+    }
+
+    function exportPDF() {
+        const opt = { margin: 5, filename: 'プログラム.pdf', jsPDF: { format: 'a4', orientation: 'portrait' } };
+        html2pdf().set(opt).from(document.getElementById('preview-box')).save();
+    }
+</script>
+</body>
+</html>
