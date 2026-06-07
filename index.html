@@ -101,10 +101,21 @@
         document.querySelectorAll('.col-drag, .col-ctrl').forEach(el => el.style.display = display);
     }
 
-    function exportPDF() {
+    // スマホでの真っ白対策：少し待ってから実行する
+    async function exportPDF() {
         toggleColumns(true);
         document.getElementById('displayTitle').innerText = document.getElementById('progTitle').value;
-        const opt = { margin: 5, filename: 'プログラム.pdf', html2canvas: { scale: 2, useCORS: true }, jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' } };
+        
+        // 少しだけ待機して描画を完了させる
+        await new Promise(resolve => setTimeout(resolve, 300));
+        
+        const opt = { 
+            margin: 5, 
+            filename: 'プログラム.pdf', 
+            html2canvas: { scale: 1.5, useCORS: true }, // スマホ負荷軽減のためscaleを少し下げました
+            jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' } 
+        };
+        
         html2pdf().set(opt).from(document.getElementById('preview-box')).save().then(() => toggleColumns(false));
     }
 
