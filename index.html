@@ -18,7 +18,7 @@
         table { width: 100%; border-collapse: collapse; font-size: 14px; }
         th, td { border: 1px solid #ccc; padding: 8px; text-align: center; }
         th { background: #eee; }
-        @media print { .no-print, .col-ctrl, .col-drag { display: none !important; } }
+        @media print { .no-print { display: none !important; } }
     </style>
 </head>
 <body>
@@ -47,8 +47,8 @@
             <button class="btn" onclick="saveData()">💾 保存</button>
             <button class="btn" onclick="document.getElementById('fileInput').click()">📁 読み込み</button>
             <input type="file" id="fileInput" style="display:none" onchange="loadData(event)">
-            <button class="btn" style="background:#555; color:white;" onclick="window.print()">印刷</button>
-            <button class="btn" style="background:#007bff; color:white;" onclick="exportPDF()">PDF保存</button>
+            <button class="btn" style="background:#555; color:white;" onclick="printProgram()">🖨 印刷</button>
+            <button class="btn" style="background:#007bff; color:white;" onclick="exportPDF()">📄 PDF保存</button>
         </div>
     </div>
 
@@ -94,11 +94,28 @@
         let count = 1;
         document.querySelectorAll('#sortable-list tr').forEach((row) => {
             const numCell = row.querySelectorAll('td')[1];
-            if (numCell.innerText !== '-') numCell.innerText = count++;
+            if (numCell && numCell.innerText !== '-') numCell.innerText = count++;
         });
     }
 
-    // 保存機能
+    function toggleColumns(hide) {
+        const display = hide ? 'none' : '';
+        document.querySelectorAll('.col-drag, .col-ctrl').forEach(el => el.style.display = display);
+    }
+
+    function printProgram() {
+        toggleColumns(true);
+        window.print();
+        toggleColumns(false);
+    }
+
+    function exportPDF() {
+        toggleColumns(true);
+        document.getElementById('displayTitle').innerText = document.getElementById('progTitle').value;
+        const opt = { margin: 5, filename: 'プログラム.pdf', html2canvas: { scale: 2, useCORS: true }, jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' } };
+        html2pdf().set(opt).from(document.getElementById('preview-box')).save().then(() => toggleColumns(false));
+    }
+
     function saveData() {
         const data = { title: document.getElementById('progTitle').value, rows: [] };
         document.querySelectorAll('#sortable-list tr').forEach(tr => {
@@ -113,23 +130,16 @@
         const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'program.json'; a.click();
     }
 
-    // 読み込み機能
     function loadData(e) {
         const file = e.target.files[0];
         const reader = new FileReader();
         reader.onload = function(e) {
             const data = JSON.parse(e.target.result);
             document.getElementById('progTitle').value = data.title;
-            document.getElementById('displayTitle').innerText = data.title;
             document.getElementById('sortable-list').innerHTML = '';
             data.rows.forEach(r => addRow(r));
         };
         reader.readAsText(file);
-    }
-
-    function exportPDF() {
-        document.getElementById('displayTitle').innerText = document.getElementById('progTitle').value;
-        html2pdf().set({ margin: 5, filename: 'プログラム.pdf', jsPDF: { format: 'a4', orientation: 'portrait' } }).from(document.getElementById('preview-box')).save();
     }
 </script>
 </body>
