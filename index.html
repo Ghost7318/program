@@ -7,74 +7,104 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.15.0/Sortable.min.js"></script>
     <style>
-        body { font-family: sans-serif; padding: 10px; background: #f4f7f6; margin: 0; }
-        .container { max-width: 600px; margin: auto; background: white; padding: 15px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
-        .input-area { display: flex; flex-direction: column; gap: 8px; padding: 15px; border: 2px solid #007bff; border-radius: 8px; background: #eef7ff; }
-        input, select { padding: 12px; border: 1px solid #ccc; border-radius: 6px; font-size: 16px; }
-        .btn { cursor: pointer; padding: 12px; border-radius: 6px; border: none; font-weight: bold; font-size: 14px; width: 100%; margin-top: 5px; }
-        .btn-add { background: #28a745; color: white; }
-        .btn-del { background: #dc3545; color: white; padding: 4px 8px; font-size: 12px; }
-        .table-wrapper { overflow-x: auto; margin-top: 20px; }
-        table { width: 100%; border-collapse: collapse; font-size: 14px; }
-        th, td { border: 1px solid #ccc; padding: 8px; text-align: center; }
-        th { background: #eee; }
+        body { font-family: sans-serif; padding: 20px; background: #f4f7f6; margin: 0; }
+        .container { max-width: 900px; margin: auto; background: white; padding: 30px; border-radius: 12px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
         
-        /* 25行ごとの改ページ設定 */
-        .page-break { page-break-after: always; }
+        /* 大きく押しやすい入力エリア */
+        .input-area { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; padding: 20px; border: 2px solid #007bff; border-radius: 10px; background: #eef7ff; margin-bottom: 20px; }
+        input, select { padding: 18px; font-size: 18px; border: 1px solid #ccc; border-radius: 8px; box-sizing: border-box; width: 100%; }
+        .full-width { grid-column: span 2; }
+        
+        /* ボタン共通 */
+        .btn { cursor: pointer; padding: 18px; border-radius: 8px; border: none; font-weight: bold; font-size: 18px; width: 100%; }
+        .btn-add { background: #28a745; color: white; grid-column: span 2; }
+        .btn-del { background: #dc3545; color: white; padding: 6px 12px; font-size: 14px; border-radius: 4px; cursor: pointer; border: none; }
+        
+        /* 印刷する表のスタイル（通常時） */
+        #programTable { width: 100%; border-collapse: collapse; table-layout: fixed; border: 1px solid #000; margin-top: 10px; }
+        #programTable th, #programTable td { border: 1px solid #000; padding: 12px 6px; text-align: center; box-sizing: border-box; word-break: break-all; }
+        #programTable th { background: #eee; font-weight: bold; }
+        
+        .drag-handle { cursor: grab; color: #888; font-weight: bold; font-size: 20px; user-select: none; }
+        
+        /* PDF出力用：25行が1ページに収まるようにサイズを自動縮小 */
+        .pdf-mode #programTable { font-size: 11px; }
+        .pdf-mode #programTable td { padding: 5px 4px; }
+        .pdf-mode .col-ctrl { display: none !important; } /* PDF時は並・操作列を強制非表示 */
+        
+        /* 改ページとヘッダー固定 */
+        .page-break { page-break-before: always; }
+        thead { display: table-header-group; }
     </style>
 </head>
 <body>
 
 <div class="container">
     <div class="no-print">
-        <h2 style="margin-top:0;">プログラム作成ツール</h2>
-        <input type="text" id="progTitle" value="カラオケ発表会 プログラム" style="width: 100%; box-sizing: border-box; margin-bottom: 10px; padding: 10px;">
+        <h2 style="margin-top:0;">プログラム作成</h2>
+        <input type="text" id="progTitle" value="カラオケ発表会 プログラム" style="width: 100%; padding: 15px; font-size: 20px; margin-bottom: 20px;">
         
         <div class="input-area">
             <select id="type" onchange="toggleInputs()">
                 <option value="song">曲目入力</option>
                 <option value="break">休憩・その他</option>
             </select>
-            <input type="number" id="inputSeq" placeholder="順番（曲目のみ）">
+            <input type="number" id="inputSeq" placeholder="順番（空欄でも自動連番）">
             <input type="text" id="name" placeholder="名前">
             <input type="text" id="song" placeholder="曲名">
             <input type="text" id="artist" placeholder="歌手名">
             <input type="text" id="key" placeholder="キー">
             <select id="bento"><option value="なし">弁当なし</option><option value="あり">弁当あり</option></select>
-            <input type="text" id="break-text" placeholder="内容" style="display:none;">
+            <input type="text" id="break-text" placeholder="休憩・その他（例：休憩 15分）" style="display:none;" class="full-width">
             <button class="btn btn-add" onclick="addRow()">追加する</button>
         </div>
         
-        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 5px; margin-top: 10px;">
-            <button class="btn" onclick="saveData()">💾 保存</button>
-            <button class="btn" onclick="document.getElementById('fileInput').click()">📁 読み込み</button>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 20px;">
+            <button class="btn" style="background:#6c757d; color:white;" onclick="saveData()">💾 保存</button>
+            <button class="btn" style="background:#6c757d; color:white;" onclick="document.getElementById('fileInput').click()">📁 読み込み</button>
             <input type="file" id="fileInput" style="display:none" onchange="loadData(event)">
-            <button class="btn" style="background:#007bff; color:white; grid-column: span 2;" onclick="exportPDF()">📄 PDFで保存</button>
+            <button class="btn" style="background:#007bff; color:white; grid-column: span 2;" onclick="exportPDF()">📄 PDF保存（25行ずつに自動調整）</button>
         </div>
     </div>
 
     <div id="preview-box">
-        <h2 id="displayTitle" style="text-align:center;">カラオケ発表会 プログラム</h2>
-        <div class="table-wrapper">
-            <table>
-                <thead>
-                    <tr><th class="col-drag">並</th><th>順</th><th>名前</th><th>曲名</th><th>歌手名</th><th>キー</th><th>弁当</th><th class="col-ctrl">操作</th></tr>
-                </thead>
-                <tbody id="sortable-list"></tbody>
-            </table>
-        </div>
+        <h2 id="displayTitle" style="text-align:center; margin-bottom: 15px;">カラオケ発表会 プログラム</h2>
+        <table id="programTable">
+            <thead>
+                <tr>
+                    <th class="col-ctrl" style="width: 6%;">並</th>
+                    <th style="width: 8%;">順</th>
+                    <th>名前</th>
+                    <th>曲名</th>
+                    <th>歌手名</th>
+                    <th style="width: 10%;">キー</th>
+                    <th style="width: 10%;">弁当</th>
+                    <th class="col-ctrl" style="width: 12%;">操作</th>
+                </tr>
+            </thead>
+            <tbody id="sortable-list"></tbody>
+        </table>
     </div>
 </div>
 
 <script>
-    new Sortable(document.getElementById('sortable-list'), { animation: 150, onEnd: renumber });
+    // ドラッグ＆ドロップで行を並び替え可能にする設定
+    new Sortable(document.getElementById('sortable-list'), {
+        animation: 150,
+        handle: '.drag-handle',
+        onEnd: renumber
+    });
 
+    // 入力フォームの表示切り替え（曲目入力 or 休憩）
     function toggleInputs() {
         const isBreak = document.getElementById('type').value === 'break';
-        ['inputSeq', 'name', 'song', 'artist', 'key', 'bento'].forEach(id => document.getElementById(id).style.display = isBreak ? 'none' : 'block');
+        ['inputSeq', 'name', 'song', 'artist', 'key', 'bento'].forEach(id => {
+            document.getElementById(id).style.display = isBreak ? 'none' : 'block';
+        });
         document.getElementById('break-text').style.display = isBreak ? 'block' : 'none';
     }
 
+    // 行の追加
     function addRow(data = null) {
         const tbody = document.getElementById("sortable-list");
         const type = data ? data.type : document.getElementById('type').value;
@@ -82,68 +112,112 @@
         
         if (type === 'break') {
             const val = data ? data.text : document.getElementById('break-text').value;
-            row.innerHTML = `<td class="col-drag">☰</td><td class="num">-</td><td colspan="5"><b>${val}</b></td><td class="col-ctrl"><button class="btn-del" onclick="removeRow(this)">削除</button></td>`;
+            row.innerHTML = `
+                <td class="drag-handle col-ctrl">☰</td>
+                <td class="num">-</td>
+                <td colspan="5" style="text-align:center;"><b>${val}</b></td>
+                <td class="col-ctrl"><button class="btn-del" onclick="removeRow(this)">削除</button></td>`;
         } else {
-            row.innerHTML = `<td class="col-drag">☰</td><td class="num">${data ? data.seq : document.getElementById('inputSeq').value}</td><td>${data ? data.name : document.getElementById('name').value}</td><td>${data ? data.song : document.getElementById('song').value}</td><td>${data ? data.artist : document.getElementById('artist').value}</td><td>${data ? data.key : document.getElementById('key').value}</td><td>${data ? data.bento : document.getElementById('bento').value}</td><td class="col-ctrl"><button class="btn-del" onclick="removeRow(this)">削除</button></td>`;
+            const seqVal = data ? data.seq : document.getElementById('inputSeq').value;
+            const nameVal = data ? data.name : document.getElementById('name').value;
+            const songVal = data ? data.song : document.getElementById('song').value;
+            const artistVal = data ? data.artist : document.getElementById('artist').value;
+            const keyVal = data ? data.key : document.getElementById('key').value;
+            const bentoVal = data ? data.bento : document.getElementById('bento').value;
+            
+            row.innerHTML = `
+                <td class="drag-handle col-ctrl">☰</td>
+                <td class="num">${seqVal}</td>
+                <td>${nameVal}</td>
+                <td>${songVal}</td>
+                <td>${artistVal}</td>
+                <td>${keyVal}</td>
+                <td>${bentoVal}</td>
+                <td class="col-ctrl"><button class="btn-del" onclick="removeRow(this)">削除</button></td>`;
         }
         tbody.appendChild(row);
         renumber();
+        
+        // 入力欄をクリア（読み込み時以外）
+        if (!data) {
+            ['name', 'song', 'artist', 'key', 'break-text'].forEach(id => document.getElementById(id).value = '');
+        }
     }
 
-    function removeRow(btn) { btn.parentElement.parentElement.remove(); renumber(); }
+    function removeRow(btn) {
+        btn.parentElement.parentElement.remove();
+        renumber();
+    }
 
-    function renumber() { 
+    // 順番の自動連番と、25行ごとの正確な改ページ処理
+    function renumber() {
         let count = 1;
         const rows = document.querySelectorAll('#sortable-list tr');
         rows.forEach((row, index) => {
-            // 改ページのリセット
             row.classList.remove('page-break');
-            
-            // 25行ごとに改ページクラスを付与
-            if ((index + 1) % 25 === 0) {
+            // 26行目、51行目など、25行ごとに次のページへ送るクラスを付与
+            if (index > 0 && index % 25 === 0) {
                 row.classList.add('page-break');
             }
-            
             const numCell = row.querySelectorAll('td')[1];
-            if (numCell && numCell.innerText !== '-') numCell.innerText = count++;
+            if (numCell && numCell.innerText !== '-') {
+                numCell.innerText = count++;
+            }
         });
     }
 
-    function toggleColumns(hide) {
-        const display = hide ? 'none' : '';
-        document.querySelectorAll('.col-drag, .col-ctrl').forEach(el => el.style.display = display);
-    }
-
+    // PDF出力
     async function exportPDF() {
-        toggleColumns(true);
-        document.getElementById('displayTitle').innerText = document.getElementById('progTitle').value;
-        await new Promise(resolve => setTimeout(resolve, 300));
+        const container = document.getElementById('preview-box');
         
+        // PDF専用スタイルを一時的に適用
+        container.classList.add('pdf-mode');
+        document.getElementById('displayTitle').innerText = document.getElementById('progTitle').value;
+
         const opt = { 
-            margin: 5, 
-            filename: 'プログラム.pdf', 
-            html2canvas: { scale: 1.5, useCORS: true }, 
+            margin: [8, 8, 8, 8], // 上下左右の余白を程よく詰める
+            filename: document.getElementById('progTitle').value + '.pdf', 
+            html2canvas: { scale: 2.5, useCORS: true }, 
             jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' } 
         };
-        html2pdf().set(opt).from(document.getElementById('preview-box')).save().then(() => toggleColumns(false));
+        
+        // PDF出力が完了するまで少し待ってから保存
+        await html2pdf().set(opt).from(container).save();
+        
+        // 出力後に元のサイズ・表示に戻す
+        container.classList.remove('pdf-mode');
     }
 
+    // JSON保存
     function saveData() {
         const data = { title: document.getElementById('progTitle').value, rows: [] };
         document.querySelectorAll('#sortable-list tr').forEach(tr => {
             const tds = tr.querySelectorAll('td');
-            if (tds[2].colSpan === 5) {
+            if (tds[2] && tds[2].colSpan === 5) {
                 data.rows.push({ type: 'break', text: tds[2].innerText });
-            } else {
-                data.rows.push({ type: 'song', seq: tds[1].innerText, name: tds[2].innerText, song: tds[3].innerText, artist: tds[4].innerText, key: tds[5].innerText, bento: tds[6].innerText });
+            } else if (tds[2]) {
+                data.rows.push({
+                    type: 'song',
+                    seq: tds[1].innerText,
+                    name: tds[2].innerText,
+                    song: tds[3].innerText,
+                    artist: tds[4].innerText,
+                    key: tds[5].innerText,
+                    bento: tds[6].innerText
+                });
             }
         });
         const blob = new Blob([JSON.stringify(data)], { type: 'application/json' });
-        const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'program.json'; a.click();
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(blob);
+        a.download = data.title + '.json';
+        a.click();
     }
 
+    // JSON読み込み
     function loadData(e) {
         const file = e.target.files[0];
+        if (!file) return;
         const reader = new FileReader();
         reader.onload = function(e) {
             const data = JSON.parse(e.target.result);
